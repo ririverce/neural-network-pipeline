@@ -19,20 +19,21 @@ def main():
     root_dir = "./dataset/bengaliai-cv19/"
     loader = loaders.bengaliai_loader.BengaliAILoader(root_dir)
     dataset = loader.load()
+    dataset = dataset[:10000]
     preprocessor_constructor = preprocessors.classification_preprocessor.ClassificationPreprocessor
     train_iterator = iterators.classification_iterator.ClassificationIterator(
                          dataset,
                          preprocessor_constructor,
                          image_size=(128, 128),
                          batch_size=32,
-                         num_processes=2,
+                         num_processes=4,
                          phase="train")
     validation_iterator = iterators.classification_iterator.ClassificationIterator(
                               dataset,
                               preprocessor_constructor,
                               image_size=(128, 128),
                               batch_size=32,
-                              num_processes=2,
+                              num_processes=4,
                               phase="validation")
     net = models.bengali.BengaliVGG16([168, 11, 7]).to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=0.01)

@@ -8,10 +8,11 @@ import cv2
 class ClassificationPreprocessor:
 
     def __init__(self, dataset, batch_size,
-                 output_size=(64, 64)):
+                 output_size=(64, 64), is_train=True):
         self.dataset = dataset
         self.batch_size = batch_size
         self.output_size = output_size
+        self.is_train = is_train
 
     def __random_crop_and_resize(self, image):
         image_height, image_width = image.shape[:2]
@@ -71,11 +72,14 @@ class ClassificationPreprocessor:
             label = [data["grapheme_root"],
                      data["vowel_diacritic"],
                      data["consonant_diacritic"]]
-            image = self.__random_crop_and_resize(image)
-            image = self.__random_rotate(image)
-            image = self.__random_cutout(image)
-            image = self.__random_brightness(image)
-            image = self.__add_gaussian_nois(image)
+            if self.is_train:
+                image = self.__random_crop_and_resize(image)
+                image = self.__random_rotate(image)
+                image = self.__random_cutout(image)
+                image = self.__random_brightness(image)
+                image = self.__add_gaussian_nois(image)
+            else:
+                image = cv2.resize(image, self.output_size)
             #cv2.imshow("test", image)
             #cv2.waitKey(0)
             image = np.transpose(image, (2, 0, 1))

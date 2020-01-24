@@ -15,8 +15,10 @@ class ClassificationIterator:
         self.phase = phase
         if phase == "train":
             self.dataset = self.dataset[:int(len(self.dataset)*0.8)]
+            self.is_train = True
         elif phase == "validation":
             self.dataset = self.dataset[int(len(self.dataset)*0.8):]
+            self.is_train = False
         self.num_samples = len(self.dataset)
         self.split_dataset = [self.dataset[i::self.num_processes] for i in range(self.num_processes)]
         self.batch_queue = multiprocessing.Queue()
@@ -31,7 +33,8 @@ class ClassificationIterator:
             self.process_list = []
             for d in self.split_dataset:
                 preprocessor = self.preprocessor_constructor(d, self.batch_size,
-                                                             output_size=self.image_size)
+                                                             output_size=self.image_size,
+                                                             is_train=self.is_train)
                 self.process_list.append(multiprocessing.Process(target=preprocessor.run,
                                                                  args=(self.batch_queue,)))
             for p in self.process_list:
