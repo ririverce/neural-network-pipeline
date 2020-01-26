@@ -1,1 +1,2 @@
 import loaders.bengaliai_loader
+import loaders.cifar10_loader

@@ -53,8 +53,12 @@ def bengaliai_convertor(src_dir, dst_dir):
             image_data = np.array(row[2:])
             image_data = image_data.reshape((137, 236))
             image_data = image_data.astype(np.uint8)
+            print(file_name)
+            cv2.imshow("test", image_data)
+            cv2.waitKey(1000)
             cv2.imwrite(file_name, image_data)
             label_df = train_df[train_df["image_id"]==row[1]]
+            print(label_df)
             if len(label_df.iloc[0]) == 5:
                 _, grapheme_root, vowel_diacritic, consonant_diacritic, grapheme = label_df.iloc[0]
             else:
@@ -84,6 +88,8 @@ def bengaliai_convertor(src_dir, dst_dir):
             image_data = np.array(row[2:])
             image_data = image_data.reshape((137, 236))
             image_data = image_data.astype(np.uint8)
+            cv2.imshow("test", image_data)
+            cv2.waitKey(1000)
             cv2.imwrite(file_path, image_data)
             label_df = test_df[test_df["image_id"]==row[1]]
             if len(label_df.iloc[0]) == 5:
@@ -107,8 +113,7 @@ def test():
     dataset = loader.load()
     print(len(dataset))
     print(dataset[:5])
-    #bengaliai_convertor("/media/hal/95e63264-ad11-4f6d-acc3-449ff70a23db/dataset/kaggle-raw/bengaliai-cv19/",
-    #                    "/media/hal/95e63264-ad11-4f6d-acc3-449ff70a23db/dataset/kaggle-preprocessed/bengaliai-cv19/")
+    
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
 '''***********************
 ***** Classification *****
 ***********************'''
+import models.alexnet
 import models.vgg16
-import models.bengali
 
 '''*************************
 ***** Object Detection *****

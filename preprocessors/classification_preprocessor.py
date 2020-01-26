@@ -46,14 +46,15 @@ class ClassificationPreprocessor:
             image[int(crop_y_min):int(crop_y_max), int(crop_x_min):int(crop_x_max)] = int(color)
         return image
 
-    def __random_brightness(self, image, range=(0.8, 1.2)):
-        scale = random.random() * (range[1] - range[0]) + range[0]
+    def __random_brightness(self, image, rand_range=(0.8, 1.2)):
+        scale = random.random() * (rand_range[1] - rand_range[0]) + rand_range[0]
         image = image * scale
         image = np.clip(image, 0, 255)
         image = image.astype(np.uint8)
         return image
 
-    def __add_gaussian_nois(self, image, mean=0, var=10):
+    def __add_gaussian_nois(self, image, mean=0, max_var=10):
+        var = random.random() * max_var
         gauss = np.random.normal(mean, var, image.shape)
         image = image + gauss
         image = np.clip(image, 0, 255).astype(np.uint8)
@@ -68,33 +69,42 @@ class ClassificationPreprocessor:
             image = cv2.imread(data["image_path"])
             if image is None:
                 meta["skip"] += 1
-                break
-            label = [data["grapheme_root"],
-                     data["vowel_diacritic"],
-                     data["consonant_diacritic"]]
+                continue
+            if "grapheme_root" in data.keys():
+                label = [data["grapheme_root"],
+                         data["vowel_diacritic"],
+                         data["consonant_diacritic"]]
+            else:
+                label = data["label"]
             if self.is_train:
                 image = self.__random_crop_and_resize(image)
                 image = self.__random_rotate(image)
                 image = self.__random_cutout(image)
                 image = self.__random_brightness(image)
                 image = self.__add_gaussian_nois(image)
+                #image = cv2.resize(image, self.output_size)
             else:
                 image = cv2.resize(image, self.output_size)
             #cv2.imshow("test", image)
-            #cv2.waitKey(0)
+            #cv2.waitKey(1000)
+            #image = image[:, :, 0]
+            #image = np.expand_dims(image, axis=-1)
             image = np.transpose(image, (2, 0, 1))
+            image = (image - 127.5) / 127.5
             batch_image.append(image)
             batch_label.append(label)
             if len(batch_image) == self.batch_size:
-                queue.put([batch_image,
-                           batch_label,
+                queue.put([np.array(batch_image).astype(np.float32),
+                           np.array(batch_label).astype(np.int),
                            meta])
                 batch_image = []
                 batch_label = []
-            meta = {"skip" : 0, "end" : False}
+                meta = {"skip" : 0, "end" : False}
         meta["skip"] += len(batch_image)    
         meta["end"] = True
-        queue.put([batch_image, batch_label, meta])        
+        queue.put([np.array(batch_image).astype(np.float32),
+                   np.array(batch_label).astype(np.int),
+                   meta])        
 
 
 
