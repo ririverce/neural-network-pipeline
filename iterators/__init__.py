@@ -1,1 +1,1 @@
-import iterators.classification_iterator
+from iterators.multiprocess_iterator import MultiprocessIterator

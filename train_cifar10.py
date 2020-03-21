@@ -1,5 +1,4 @@
-import random
-import time
+import csv
 
 import tqdm
 import numpy as np
@@ -7,117 +6,106 @@ import cv2
 import torch
 
 import loaders
-import preprocessors
+import processors
 import iterators
 import models
+import losses
+import loggers
 
 
 
 def main():
 
-    device = "cuda:0"
+    batch_size = 256
+    num_classes = 10
 
-    root_dir = "./dataset/CIFAR-10/"
-    loader = loaders.cifar10_loader.Cifar10Loader(root_dir)
-    dataset = loader.load()
-    random.seed(a=0)
-    random.shuffle(dataset)
-    preprocessor_constructor = preprocessors.classification_preprocessor.ClassificationPreprocessor
-    train_iterator = iterators.classification_iterator.ClassificationIterator(
-                         dataset,
-                         preprocessor_constructor,
-                         image_size=(32, 32),
-                         batch_size=512,
-                         num_processes=4,
-                         phase="train")
-    validation_iterator = iterators.classification_iterator.ClassificationIterator(
-                              dataset,
-                              preprocessor_constructor,
-                              image_size=(32, 32),
-                              batch_size=512,
-                              num_processes=4,
-                              phase="validation")
-    net = models.alexnet.AlexNet(11).to(device)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
+    """ load dataset """
+    dataset = loaders.Cifar10Loader('./datasets/CIFAR-10').load()
+    train_dataset, valid_dataset = dataset
 
-    for epoch in range(1000):
+    """ processor """
+    train_processor = processors.Cifar10ClassificationProcessor(
+                          batch_size,
+                          num_classes=num_classes,
+                          enable_augmentation=True,
+                          image_size=(32, 32)
+                      )
+    valid_processor = processors.Cifar10ClassificationProcessor(
+                          batch_size,
+                          num_classes=num_classes,
+                          enable_augmentation=False,
+                          image_size=(32, 32)
+                      )
 
-        print(f"[epoch {epoch:04d}]")
+    """ iterator """
+    train_iterator = iterators.MultiprocessIterator(train_dataset,
+                                                    train_processor,
+                                                    num_workers=1)
+    valid_iterator = iterators.MultiprocessIterator(valid_dataset,
+                                                    valid_processor,
+                                                    num_workers=1)
 
-        """ train """
-        total_skip = 0
-        loss = 0
-        correct = 0
-        pbar = tqdm.tqdm(total=train_iterator.num_samples)
-        pbar.set_description("train ")
-        for batch in train_iterator:
-            # initialize
+    """ device """
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    
+    """ model """
+    model = models.RiriverceCifar10Net9(input_channels=3,
+                                        num_classes=num_classes).to(device)
+
+    """ loss """
+    loss_function = losses.CrossEntropyLoss().to(device)
+
+    """ optimizer """
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                           T_max=20)
+
+    """ logger """
+    logger = loggers.SimpleLogger()
+
+    """ learning """    
+    for epoch in range(100):
+        print(f"-"*64)
+        print(f"[epoch {epoch:>4d}]")
+        phase = 'train'
+        torch.set_grad_enabled(True)
+        for batch_data in tqdm.tqdm(train_iterator, desc=phase):
             optimizer.zero_grad()
-            # input
-            batch_image = torch.from_numpy(batch[0]).to(device)
-            # infer
-            outputs = net(batch_image)
-            # to gpu
-            label = torch.from_numpy(batch[1]).to(device)
-            # calc loss
-            batch_loss = loss_function(outputs, label)
-            # backward
-            batch_loss.backward()
-            # optimize
+            batch_image = torch.from_numpy(batch_data['image']).to(device)
+            batch_target = torch.from_numpy(batch_data['target']).to(device)
+            batch_output = model(batch_image)
+            batch_loss = loss_function(batch_output, batch_target)
+            batch_loss.sum().backward()
             optimizer.step()
-            # accumulate loss
-            loss += batch_loss.item() * len(batch_image)
-            # accumulate correct
-            outputs = outputs.cpu().detach().numpy()
-            infer = np.argmax(outputs, axis=-1)
-            label = label.cpu().detach().numpy()
-            batch_correct = np.equal(infer, label)
-            correct += np.count_nonzero(batch_correct)
-            # post process
-            total_skip += batch[2]["skip"]
-            pbar.update(len(batch_image)+batch[2]["skip"])
-        pbar.close()
-        loss /= train_iterator.num_samples - total_skip
-        correct /= train_iterator.num_samples - total_skip
-        print(f"result : loss={loss:.4f}, accuracy={correct:.4f}")
-
-        with torch.no_grad():
-            """ validation """
-            total_skip = 0
-            loss = 0
-            correct = 0
-            pbar = tqdm.tqdm(total=validation_iterator.num_samples)
-            pbar.set_description("validation ")
-            for batch in validation_iterator:
-                # initialize
-                optimizer.zero_grad()
-                # input
-                batch_image = torch.from_numpy(batch[0]).to(device)
-                # infer
-                outputs = net(batch_image)
-                # to gpu
-                label = torch.from_numpy(batch[1]).to(device)
-                # calc loss
-                batch_loss = loss_function(outputs, label)
-                # accumulate loss
-                loss += batch_loss.item() * len(batch_image)
-                # accumulate correct
-                outputs = outputs.cpu().detach().numpy()
-                infer = np.argmax(outputs, axis=-1)
-                label = label.cpu().detach().numpy()
-                batch_correct = np.equal(infer, label)
-                correct += np.count_nonzero(batch_correct)
-                # post process
-                total_skip += batch[2]["skip"]
-                pbar.update(len(batch_image)+batch[2]["skip"])
-            pbar.close()
-            loss /= validation_iterator.num_samples - total_skip
-            correct /= validation_iterator.num_samples - total_skip
-            print(f"result : loss={loss:.4f}, accuracy={correct:.4f}")
-
-        if epoch % 10 == 9:
-            torch.save(net.state_dict(), f"./result/epoch_{epoch:04d}.model")
+            batch_loss = batch_loss.data.cpu().numpy()
+            batch_label = np.argmax(batch_target.data.cpu().numpy(), axis=-1).flatten()
+            batch_pred = np.argmax(batch_output.data.cpu().numpy(), axis=-1).flatten()
+            logger.add_batch_loss(batch_loss, phase=phase)
+            logger.add_batch_pred(batch_pred, phase=phase)
+            logger.add_batch_label(batch_label, phase=phase)
+        loss = logger.get_loss(phase)
+        accuracy = logger.get_accuracy(phase)
+        print(f"loss : {loss}")
+        print(f"accuracy : {accuracy}")
+        phase = 'valid'
+        torch.set_grad_enabled(False)
+        for batch_data in tqdm.tqdm(valid_iterator, desc=phase):
+            optimizer.zero_grad()
+            batch_image = torch.from_numpy(batch_data['image']).to(device)
+            batch_target = torch.from_numpy(batch_data['target']).to(device)
+            batch_output = model(batch_image)
+            batch_loss = loss_function(batch_output, batch_target)
+            batch_loss = batch_loss.data.cpu().numpy()
+            batch_label = np.argmax(batch_target.data.cpu().numpy(), axis=-1).flatten()
+            batch_pred = np.argmax(batch_output.data.cpu().numpy(), axis=-1).flatten()
+            logger.add_batch_loss(batch_loss, phase=phase)
+            logger.add_batch_pred(batch_pred, phase=phase)
+            logger.add_batch_label(batch_label, phase=phase)
+        loss = logger.get_loss(phase)
+        accuracy = logger.get_accuracy(phase)
+        print(f"loss : {loss:.4f}")
+        print(f"accuracy : {accuracy:.4f}")
+        logger.step()
 
 
 
