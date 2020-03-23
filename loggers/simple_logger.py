@@ -25,7 +25,7 @@ class SimpleLogger:
         self._metrics[phase]['label'].extend(batch_label)
 
     def get_loss(self, phase):
-        loss = self._metrics[phase]['pred']
+        loss = self._metrics[phase]['loss']
         return np.mean(loss)
         
     def get_accuracy(self, phase):

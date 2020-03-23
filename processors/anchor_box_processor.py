@@ -135,7 +135,6 @@ class AnchorBoxProcessor:
                                      matched_pair_list,
                                      surrounding_pair_list)
         batch_loc = self._calc_loc(batch_bboxes, matched_pair_list)
-        print(batch_loc)
         return batch_conf, batch_loc
 
     def __call__(self, dataset, queue, worker_id):

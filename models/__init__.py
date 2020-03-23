@@ -17,6 +17,14 @@ from models.resnet.resnet151 import ResNet151
 
 
 
+"""**************************************
+***** Object Detection (anchor box) *****
+**************************************"""
+from models.ssd.ssd300_vgg16 import SSD300VGG16
+from models.ssd.ssd300_lite_vgg16 import SSD300LiteVGG16
+
+
+
 """***************
 ***** Others *****
 ***************"""
