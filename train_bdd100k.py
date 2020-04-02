@@ -19,11 +19,11 @@ import utils
 def main():
 
     batch_size = 32
-    num_classes = 21
+    num_classes = 11
     image_size = (300, 300)
 
     """ load dataset """
-    dataset = loaders.PascalVOCLoader('./datasets/PascalVOC').load()
+    dataset = loaders.BDD100KLoader('./datasets/BDD100K').load()
     train_dataset, valid_dataset = dataset
 
     """ default box """
@@ -68,12 +68,12 @@ def main():
                                    num_bboxes=[4, 6, 6, 6, 4, 4]).to(device)
 
     """ loss """
-    loss_function = losses.MultiBoxLoss().to('cpu')
+    loss_function = losses.MultiBoxLoss().to(device)
 
     """ optimizer """
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
-                                                           T_max=20)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+    #                                                       T_max=20)
 
     """ logger """
     logger = loggers.SimpleLogger()
@@ -87,21 +87,18 @@ def main():
         for batch_data in tqdm.tqdm(train_iterator, desc=phase):
             optimizer.zero_grad()
             batch_image = torch.from_numpy(batch_data['image']).to(device)
-            batch_gt_conf = torch.from_numpy(batch_data['conf']).to('cpu')
-            batch_gt_loc = torch.from_numpy(batch_data['loc']).to('cpu')
+            batch_gt_conf = torch.from_numpy(batch_data['conf']).to(device)
+            batch_gt_loc = torch.from_numpy(batch_data['loc']).to(device)
             batch_output = model(batch_image)
             batch_pred_conf, batch_pred_loc = batch_output
-            batch_pred_conf = batch_pred_conf.to('cpu')
-            batch_pred_loc = batch_pred_loc.to('cpu')
             batch_loss_conf, batch_loss_loc = loss_function(batch_pred_conf,
                                                             batch_pred_loc,
                                                             batch_gt_conf,
                                                             batch_gt_loc)
             batch_loss = batch_loss_conf + batch_loss_loc
-            batch_loss = batch_loss.sum() / batch_loss.shape[0]
-            batch_loss.backward()
+            batch_loss.sum().backward()
             optimizer.step()
-            batch_loss = (batch_loss_conf + batch_loss_loc).detach().cpu().numpy()
+            batch_loss = batch_loss.detach().cpu().numpy()
             logger.add_batch_loss(batch_loss, phase=phase)
             #break
         loss = logger.get_loss(phase)
@@ -112,12 +109,10 @@ def main():
         for batch_data in tqdm.tqdm(valid_iterator, desc=phase):
             optimizer.zero_grad()
             batch_image = torch.from_numpy(batch_data['image']).to(device)
-            batch_gt_conf = torch.from_numpy(batch_data['conf']).to('cpu')
-            batch_gt_loc = torch.from_numpy(batch_data['loc']).to('cpu')
+            batch_gt_conf = torch.from_numpy(batch_data['conf']).to(device)
+            batch_gt_loc = torch.from_numpy(batch_data['loc']).to(device)
             batch_output = model(batch_image)
             batch_pred_conf, batch_pred_loc = batch_output
-            batch_pred_conf = batch_pred_conf.to('cpu')
-            batch_pred_loc = batch_pred_loc.to('cpu')
             batch_loss_conf, batch_loss_loc = loss_function(batch_pred_conf,
                                                             batch_pred_loc,
                                                             batch_gt_conf,
@@ -140,8 +135,6 @@ def main():
         loss = logger.get_loss(phase)
         print(f"loss : {loss:.4f}")
         logger.step()
-
-        scheduler.step()
 
         torch.save(model.state_dict(), f"./results/model/epoch_{epoch:04d}.model")
 

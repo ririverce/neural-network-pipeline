@@ -134,11 +134,13 @@ class SSD300VGG16(torch.nn.Module):
         conf = [self.conf_block4_conv3(f4), self.conf_block7_conv1(f7),
                 self.conf_block8_conv2(f8), self.conf_block9_conv2(f9),
                 self.conf_block10_conv2(f10), self.conf_block11_conv2(f11)]
+        conf = [l.permute(0, 2, 3, 1).contiguous() for l in conf]
         conf = [l.view(l.size(0), -1, self.num_classes) for l in conf]
         conf = torch.cat(conf, 1)
         loc = [self.loc_block4_conv3(f4), self.loc_block7_conv1(f7),
                self.loc_block8_conv2(f8), self.loc_block9_conv2(f9),
                self.loc_block10_conv2(f10), self.loc_block11_conv2(f11)]
+        loc = [l.permute(0, 2, 3, 1).contiguous() for l in loc]
         loc = [l.view(l.size(0), -1, 4) for l in loc]
         loc = torch.cat(loc, 1)
         return conf, loc

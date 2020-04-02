@@ -1,3 +1,6 @@
+import os
+if __name__ == '__main__':
+    os.sys.path.append('../')
 import copy
 import random
 
@@ -118,10 +121,10 @@ class AnchorBoxProcessor:
                 b_xmin, b_ymin, b_xmax, b_ymax = bboxes[pair[1]]
                 b_cx, b_cy = (b_xmax + b_xmin) / 2, (b_ymax + b_ymin) / 2
                 b_w, b_h = b_xmax - b_xmin, b_ymax - b_ymin
-                delta_cx = (b_cx - d_cx) / (d_w * 0.1)
-                delta_cy = (b_cy - d_cy) / (d_h * 0.1)
-                delta_w = np.log(b_w / d_w) / 0.2
-                delta_h = np.log(b_h / d_h) / 0.2
+                delta_cx = np.clip((b_cx - d_cx) / (d_w * 0.1), 1e-9, None)
+                delta_cy = np.clip((b_cy - d_cy) / (d_h * 0.1), 1e-9, None)
+                delta_w = np.clip(np.log(b_w / d_w) / 0.2, 1e-9, None)
+                delta_h = np.clip(np.log(b_h / d_h) / 0.2, 1e-9, None)
                 batch_loc[i, pair[0]] = [delta_cx, delta_cy, delta_w, delta_h]
         return batch_loc
 
@@ -153,10 +156,10 @@ class AnchorBoxProcessor:
         for i, batch_data in enumerate(dataset, 0):
             batch_images, batch_labels, batch_bboxes = self._load_batch_data(batch_data)
             batch_images, batch_labels, batch_bboxes = self._augment(
-                                                         batch_images,
-                                                         batch_labels,
-                                                         batch_bboxes
-                                                     )
+                                                           batch_images,
+                                                           batch_labels,
+                                                           batch_bboxes
+                                                       )
             batch_conf, batch_loc = self._anchor_box_encode(batch_labels,
                                                             batch_bboxes)
             batch_images = np.transpose(batch_images, (0, 3, 1, 2))
@@ -169,3 +172,66 @@ class AnchorBoxProcessor:
                        'worker_id' : worker_id,
                        'is_end'    : False if i < num_batches - 1 else True})
     
+
+
+def test():
+    import os
+    import tqdm
+    import cv2
+    import loaders
+    import iterators
+    import utils
+    batch_size = 32
+    num_classes = 21
+    image_size = (300, 300)
+    dataset = loaders.PascalVOCLoader('../datasets/PascalVOC').load()
+    train_dataset, valid_dataset = dataset
+    default_box = utils.anchor_box_utils.generate_default_box(
+                      image_size,
+                      utils.anchor_box_utils.num_grids_ssd300,
+                      utils.anchor_box_utils.grid_step_ssd300,
+                      utils.anchor_box_utils.grid_size_ssd300,
+                      utils.anchor_box_utils.aspect_ratio_ssd300
+                  )
+    train_processor = AnchorBoxProcessor(
+                          batch_size,
+                          num_classes=num_classes,
+                          default_box=default_box,
+                          image_size=image_size,
+                          enable_augmentation=True,
+                      )
+    train_iterator = iterators.MultiprocessIterator(train_dataset,
+                                                    train_processor,
+                                                    num_workers=2)
+    for batch_data in tqdm.tqdm(train_iterator):
+        batch_image = batch_data['image']
+        batch_conf = batch_data['conf']
+        batch_loc = batch_data['loc']
+        for image, conf, loc in zip(batch_image, batch_conf, batch_loc):
+            image = np.transpose(image, (1, 2, 0)).astype(np.uint8)
+            default_box_cxy = default_box[:, :2] 
+            default_box_wh = default_box[:, 2:]
+            loc_cxy = loc[:, :2]
+            loc_wh = loc[:, 2:]
+            bbox_cxy = loc_cxy * 0.1 * default_box_wh + default_box_cxy
+            bbox_wh = np.exp(loc_wh * 0.2) * default_box_wh
+            mask = np.max(loc, -1) > 0
+            bbox_cxy = bbox_cxy[mask]
+            bbox_wh = bbox_wh[mask]
+            bbox_tl = bbox_cxy - bbox_wh / 2
+            bbox_br = bbox_cxy + bbox_wh / 2
+            bboxes = np.concatenate([bbox_tl, bbox_br], -1)
+            height, width = image.shape[:2]
+            for box in bboxes:
+                x_min = int(box[0] * width)
+                y_min = int(box[1] * height)
+                x_max = int(box[2] * width)
+                y_max = int(box[3] * height)
+                image = cv2.rectangle(image, (x_min, y_min), (x_max, y_max),
+                                      (0, 0, 255), 1)
+            cv2.imshow('test', image)
+            cv2.waitKey(0)
+
+
+if __name__ == '__main__':
+    test()

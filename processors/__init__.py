@@ -3,3 +3,4 @@ from processors.cifar10_classification_processor import Cifar10ClassificationPro
 from processors.imagenet_classification_processor import ImageNetClassificationProcessor
 
 from processors.anchor_box_processor import AnchorBoxProcessor
+from processors.pascal_voc_anchor_box_processor import PascalVOCAnchorBoxProcessor

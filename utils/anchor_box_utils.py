@@ -29,8 +29,8 @@ aspect_ratio_ssd300 = [[2,],
 def generate_default_box(input_size, num_grids, step, size, aspect_ratio):
     default_box = []
     for l in range(len(num_grids)):
-        for x in range(num_grids[l][0]):
-            for y in range(num_grids[l][1]):
+        for y in range(num_grids[l][1]):
+            for x in range(num_grids[l][0]):
                 cx = (x + 0.5) * step[l][0]
                 cy = (y + 0.5) * step[l][1]
                 w = size[l][0]

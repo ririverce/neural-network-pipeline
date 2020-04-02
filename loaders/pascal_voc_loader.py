@@ -20,8 +20,9 @@ class PascalVOCLoader:
                 dataset[i]['data_id'] = dataset[i]['image_path'].split('/')[-1]
                 dataset[i]['image_path'] = os.path.join(self.root_dir,
                                                         dataset[i]['image_path'])
-            self.train = dataset[:int(len(dataset)*0.8)] 
-            self.valid = dataset[int(len(dataset)*0.8):]
+            random.shuffle(dataset)
+            self.train = dataset[:int(len(dataset)*0.9)] 
+            self.valid = dataset[int(len(dataset)*0.9):]
 
     def load(self):
         return self.train, self.valid
