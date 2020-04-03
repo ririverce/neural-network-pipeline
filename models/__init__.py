@@ -36,6 +36,7 @@ from models.fcn.fcn8s_vgg16 import FCN8sVGG16
 
 """***** UNet *****"""
 from models.unet.unet import UNet
+from models.unet.lite_unet import LiteUNet
 
 
 

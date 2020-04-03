@@ -18,7 +18,7 @@ import utils
 
 def main():
 
-    batch_size = 8
+    batch_size = 16
     num_classes = 21
     image_size = (256, 256)
 
@@ -52,12 +52,11 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     
     """ model """
-    model = models.UNet(input_channels=3,
-                        num_classes=num_classes).to(device)
-
+    model = models.LiteUNet(input_channels=3,
+                            num_classes=num_classes).to(device)
 
     """ optimizer """
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
     #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
     #                                                       T_max=20)
 
