@@ -4,3 +4,6 @@ from processors.imagenet_classification_processor import ImageNetClassificationP
 
 from processors.anchor_box_processor import AnchorBoxProcessor
 from processors.pascal_voc_anchor_box_processor import PascalVOCAnchorBoxProcessor
+
+from processors.segmentation_processor import SegmentationProcessor
+from processors.pascal_voc_segmentation_processor import PascalVOCSegmentationProcessor

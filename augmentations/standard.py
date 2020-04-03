@@ -15,6 +15,19 @@ def random_contrast(image, scale_range=(0.5, 1.5), prob=1.0):
     image = np.clip(image, 0, 255).astype(np.uint8)
     return image
 
+def random_hue(image, deg_range=(-45, 45), prob=1.0):
+    if random.random() > prob:
+        return image
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    deg = random.uniform(deg_range[0], deg_range[1])
+    image[:, :, 0] = np.mod(
+                         image[:, :, 0].astype(np.float) + int(deg / 2) + 180,
+                         180
+                     ).astype(np.uint8)
+    image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+    image = np.clip(image, 0, 255).astype(np.uint8)
+    return image
+
 """***************
 ***** Filter *****
 ***************"""

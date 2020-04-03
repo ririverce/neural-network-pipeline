@@ -25,6 +25,20 @@ from models.ssd.ssd300_lite_vgg16 import SSD300LiteVGG16
 
 
 
+"""******************************
+***** Semantic Segmentation *****
+******************************"""
+
+"""***** FCN *****"""
+from models.fcn.fcn32s_vgg16 import FCN32sVGG16
+from models.fcn.fcn16s_vgg16 import FCN16sVGG16
+from models.fcn.fcn8s_vgg16 import FCN8sVGG16
+
+"""***** UNet *****"""
+from models.unet.unet import UNet
+
+
+
 """***************
 ***** Others *****
 ***************"""
