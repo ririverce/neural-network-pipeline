@@ -7,3 +7,4 @@ from processors.pascal_voc_anchor_box_processor import PascalVOCAnchorBoxProcess
 
 from processors.segmentation_processor import SegmentationProcessor
 from processors.pascal_voc_segmentation_processor import PascalVOCSegmentationProcessor
+from processors.bdd100k_segmentation_processor import BDD100KSegmentationProcessor

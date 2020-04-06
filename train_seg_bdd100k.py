@@ -19,21 +19,21 @@ import utils
 def main():
 
     batch_size = 16
-    num_classes = 21
+    num_classes = 20
     image_size = (256, 256)
 
     """ load dataset """
-    dataset = loaders.PascalVOCSegmentationLoader('./datasets/PascalVOC/segmentation').load()
+    dataset = loaders.BDD100KSegmentationLoader('./datasets/BDD100K').load()
     train_dataset, valid_dataset = dataset
 
     """ processor """
-    train_processor = processors.PascalVOCSegmentationProcessor(
+    train_processor = processors.BDD100KSegmentationProcessor(
                           batch_size,
                           num_classes=num_classes,
                           image_size=image_size,
                           enable_augmentation=True,
                       )
-    valid_processor = processors.PascalVOCSegmentationProcessor(
+    valid_processor = processors.BDD100KSegmentationProcessor(
                           batch_size,
                           num_classes=num_classes,
                           image_size=image_size,

@@ -58,9 +58,54 @@ class BDD100KLoader:
 
 
 
+class BDD100KSegmentationLoader:
+
+    train_image_dir = 'bdd100k_seg/bdd100k/seg/images/train'
+    train_label_dir = 'bdd100k_seg/bdd100k/seg/labels/train'
+    valid_image_dir = 'bdd100k_seg/bdd100k/seg/images/valid'
+    valid_label_dir = 'bdd100k_seg/bdd100k/seg/labels/valid'
+    
+    def __init__(self, root_dir):
+        import cv2
+        import numpy as np
+        self.root_dir = root_dir
+        train_image_list = os.listdir(os.path.join(self.root_dir,
+                                                   self.train_image_dir))
+        train_label_list = os.listdir(os.path.join(self.root_dir,
+                                                   self.train_label_dir))
+        train_image_list.sort()
+        train_label_list.sort()
+        train_image_list = [os.path.join(
+                                os.path.join(self.root_dir,
+                                             self.train_image_dir),
+                                name
+                            ) for name in train_image_list]
+        train_label_list = [os.path.join(
+                                os.path.join(self.root_dir,
+                                             self.train_label_dir),
+                                name
+                            ) for name in train_label_list]
+        dataset = []
+        for image_path, label_path in zip(train_image_list, train_label_list): 
+            dataset.append({'data_id' : image_path.split('/')[-1],
+                            'image_path' : image_path,
+                            'segment_path' : label_path}) 
+        random.shuffle(dataset)
+        self.train = dataset[:int(len(dataset)*0.8)] 
+        self.valid = dataset[int(len(dataset)*0.8):]
+
+    def load(self):
+        return self.train, self.valid
+
+
+
+
+
 def test():
+    #root_dir = 'datasets/BDD100K'
+    #loader = BDD100KLoader(root_dir)
     root_dir = 'datasets/BDD100K'
-    loader = BDD100KLoader(root_dir)
+    loader = BDD100KSegmentationLoader(root_dir)
     
 
 
