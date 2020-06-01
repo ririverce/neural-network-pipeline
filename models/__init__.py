@@ -15,10 +15,6 @@ from models.resnet.resnet50 import ResNet50
 from models.resnet.resnet101 import ResNet101
 from models.resnet.resnet151 import ResNet151
 
-"""***** Binary Net *****"""
-#from models.binary_net.binary_components import BinaryNetLinear
-from models.binary_net.binary_net_vgg11 import BinaryNetVGG11
-
 
 
 """**************************************
@@ -48,4 +44,3 @@ from models.unet.lite_unet import LiteUNet
 ***** Others *****
 ***************"""
 from models.ririverce.ririverce_cifar10net9 import RiriverceCifar10Net9
-from models.ririverce.binary_ririverce_cifar10 import BinaryRiriverceCifar10
