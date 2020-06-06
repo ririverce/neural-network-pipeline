@@ -44,3 +44,5 @@ from models.unet.lite_unet import LiteUNet
 ***** Others *****
 ***************"""
 from models.ririverce.ririverce_cifar10net9 import RiriverceCifar10Net9
+
+from models.word2vec.skip_gram import SkipGram
